@@ -15,9 +15,13 @@ type Result struct {
 	P2 Parcels
 }
 
+// Deliver is a simple algorithm that reports the actions a set of trains must take to delivery all parcels to their appropriate location
+// It uses a greedy algorithm, and each train is not aware of the other train
 func Deliver(stations []Station, edges []edge.Edge, trains []Train) ([]Result, int) {
-	var stationNodes []node.Node
-	stationMap := map[node.Node]*Station{}
+	// stationNodes is used to build the train network
+	stationNodes := make([]node.Node, 0)
+	// stationMap is used to quickly index available stations
+	stationMap := make(map[node.Node]*Station)
 	for _, station := range stations {
 		stationMap[station.Location] = &station
 		stationNodes = append(stationNodes, station.Location)
@@ -35,6 +39,7 @@ func Deliver(stations []Station, edges []edge.Edge, trains []Train) ([]Result, i
 		}
 		W++
 
+		// use a for loop here to signify time, since multiple trains can run concurrently at the same time
 		for i := 0; i < len(trains); i++ {
 			// take a pointer to modify the train in place, otherwise range will create a copy of Train
 			train := &trains[i]
@@ -62,21 +67,26 @@ func Deliver(stations []Station, edges []edge.Edge, trains []Train) ([]Result, i
 			if len(train.Parcels) > 0 { // train already has parcels
 				nextParcel := train.Parcels[0]
 				for _, parcel := range train.Parcels[1:] {
-					// greedily choose a parcels that is nearest to any station
+					// greedily chooses a parcel whose destination is the nearest to the train's current location
 					if trainNetwork.Cost(train.Location, nextParcel.Destination) > trainNetwork.Cost(train.Location, parcel.Destination) {
 						nextParcel = parcel
 					}
 				}
+				// todo: add error checking here
+				// if nextStation is nil, that means the graph does not have a path for the train to traverse to the desired package location
 				if nextStation := trainNetwork.Next(train.Location, nextParcel.Destination); nextStation != nil {
 					train.StartJourney(*nextStation, trainNetwork.Cost(train.Location, *nextStation))
 				}
 			} else { // train has no parcels, travel to a station to pick some up
 				var nextStation *Station
 				for _, station := range stationMap {
-					if train.CanPickup(station.Parcels) {
+					if station.Location == train.Location {
+						continue
+					}
+					if train.CanPickup(*station) {
 						if nextStation != nil {
 							if trainNetwork.Cost(train.Location, nextStation.Location) > trainNetwork.Cost(train.Location, station.Location) {
-								// greedily choose nearest station
+								// greedily chooses nearest station
 								nextStation = station
 							}
 						} else {
@@ -84,6 +94,7 @@ func Deliver(stations []Station, edges []edge.Edge, trains []Train) ([]Result, i
 						}
 					}
 				}
+				// if nextStation == nil, the train has no more actions that it can take, so it stays stationary
 				if nextStation != nil {
 					if nextStation := trainNetwork.Next(train.Location, nextStation.Location); nextStation != nil {
 						train.StartJourney(*nextStation, trainNetwork.Cost(train.Location, *nextStation))
@@ -91,8 +102,8 @@ func Deliver(stations []Station, edges []edge.Edge, trains []Train) ([]Result, i
 				}
 			}
 
-			// only add result if train did something this event loop
-			if train.Location != train.Destination || len(offloaded) > 0 {
+			// only add result if the train performed an action this loop
+			if !train.IsStationary() || len(offloaded) > 0 {
 				result := Result{
 					W:  W,
 					T:  *train,

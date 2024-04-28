@@ -14,6 +14,11 @@ type Parcel struct {
 	Destination node.Node
 }
 
+// IsDestination returns true if the given input node is the desired destination of the parcel
+func (p *Parcel) IsDestination(n node.Node) bool {
+	return p.Destination == n
+}
+
 type Parcels []Parcel
 
 func (packages Parcels) String() string {

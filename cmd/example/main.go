@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/kashing1999/bigpay-trains/internal/data/edge"
 	"github.com/kashing1999/bigpay-trains/internal/data/node"
 	"github.com/kashing1999/bigpay-trains/internal/logic/trains"
@@ -17,11 +18,6 @@ func main() {
 					Weight:      3,
 					Destination: node.Node{Key: "C"},
 				},
-				{
-					Name:        "K3",
-					Weight:      3,
-					Destination: node.Node{Key: "C"},
-				},
 			},
 		},
 		{
@@ -30,7 +26,7 @@ func main() {
 				{
 					Name:        "K2",
 					Weight:      5,
-					Destination: node.Node{Key: "A"},
+					Destination: node.Node{Key: "B"}, // does not pick up packages already in correct station
 				},
 			},
 		},
@@ -59,15 +55,11 @@ func main() {
 			Capacity: 6,
 			Location: node.Node{Key: "B"},
 		},
-		{
-			Name:     "Q2",
-			Capacity: 3,
-			Location: node.Node{Key: "A"},
-		},
 	}
 
-	out, _ := trains.Deliver(stations, edges, ts)
+	out, W := trains.Deliver(stations, edges, ts)
 	for _, o := range out {
 		fmt.Printf("W=%d, T=%s, N1=%s, P1=%s, N2=%s, P2=%s\n", o.W, o.T.Name, o.N1.Key, o.P1, o.N2.Key, o.P2)
 	}
+	fmt.Printf("Total wait time: %d", W)
 }

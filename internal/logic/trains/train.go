@@ -11,6 +11,7 @@ const (
 	Moving
 )
 
+// Train is a train in the train network
 type Train struct {
 	Name     string
 	Capacity int
@@ -22,6 +23,7 @@ type Train struct {
 	Destination       node.Node
 }
 
+// Move moves the train towards its destination
 func (t *Train) Move() {
 	switch t.Status {
 	case Stationary:
@@ -34,16 +36,24 @@ func (t *Train) Move() {
 	}
 }
 
+// StartJourney starts the journey of a train towards its destination
 func (t *Train) StartJourney(dest node.Node, distance int) {
 	t.Destination = dest
 	t.DistanceRemaining = distance
-	t.Status = Moving
+
+	if distance <= 0 {
+		t.Status = Stationary
+	} else {
+		t.Status = Moving
+	}
 }
 
+// IsStationary returns whether the train is stationary or not
 func (t *Train) IsStationary() bool {
 	return t.Status == Stationary
 }
 
+// RemainingCapacity returns the remaining capacity of a train, taking into account the current load of the train
 func (t *Train) RemainingCapacity() int {
 	currentLoad := 0
 	for _, p := range t.Parcels {
@@ -52,6 +62,8 @@ func (t *Train) RemainingCapacity() int {
 	return t.Capacity - currentLoad
 }
 
+// Offload tries to offload a set of parcels at a location
+// It returns the parcels that were offloaded
 func (t *Train) Offload(location node.Node) []Parcel {
 	offload := make([]Parcel, 0)
 	remaining := make([]Parcel, 0)
@@ -71,16 +83,21 @@ func (t *Train) Offload(location node.Node) []Parcel {
 	return offload
 }
 
-func (t *Train) CanPickup(parcels []Parcel) bool {
+// CanPickup returns true if the train can pick up any parcel within the station
+func (t *Train) CanPickup(station Station) bool {
 	remainingCapacity := t.RemainingCapacity()
-	for _, parcel := range parcels {
-		if parcel.Weight <= remainingCapacity {
+	for _, parcel := range station.Parcels {
+		// can only pick up parcels that are not in the correct station
+		// and parcels that is under the train's current capacity
+		if !parcel.IsDestination(station.Location) && parcel.Weight <= remainingCapacity {
 			return true
 		}
 	}
 	return false
 }
 
+// Pickup will pick up a set of parcels for a train to deliver
+// It returns a list of packages that were picked up, and the remaining packages
 func (t *Train) Pickup(parcels []Parcel) ([]Parcel, []Parcel) {
 	pickedUpPackages := make([]Parcel, 0)
 	remainingPackages := make([]Parcel, 0)
@@ -88,7 +105,7 @@ func (t *Train) Pickup(parcels []Parcel) ([]Parcel, []Parcel) {
 	// simple algorithm to loop through the parcels, and check which one can be picked up
 	// this is a knapsack problem, and can be improved with a heuristic
 	for _, p := range parcels {
-		if p.Destination != t.Location && p.Weight <= remainingCapacity {
+		if !p.IsDestination(t.Location) && p.Weight <= remainingCapacity {
 			t.Parcels = append(t.Parcels, p)
 			remainingCapacity -= p.Weight
 			pickedUpPackages = append(pickedUpPackages, p)
@@ -99,6 +116,7 @@ func (t *Train) Pickup(parcels []Parcel) ([]Parcel, []Parcel) {
 	return pickedUpPackages, remainingPackages
 }
 
+// AllStationary returns true if the input trains are all stationary
 func AllStationary(trains []Train) bool {
 	for _, t := range trains {
 		if !t.IsStationary() {

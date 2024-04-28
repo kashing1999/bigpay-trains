@@ -11,6 +11,9 @@ import (
 type Costs map[node.Node]int
 type Prev map[node.Node]*node.Node
 
+// Dijkstra is an implementation of the Dijkstra algorithm
+// It returns the costs to travel to every node in the graph
+// And a previous map which allows the caller to construct a path from the node to a destination node
 func Dijkstra(graph graph.SimpleGraph, start node.Node) (Costs, Prev) {
 	costs := make(map[node.Node]int)
 	prev := make(map[node.Node]*node.Node)

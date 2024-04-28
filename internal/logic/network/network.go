@@ -7,6 +7,8 @@ import (
 	"github.com/kashing1999/bigpay-trains/internal/data/node"
 )
 
+// Network is a simple network that allows the users to find the cost of traversing to any node in the network
+// It also allows the user to find the next node to traverse to, to reach the shortest path
 type Network struct {
 	costMap map[node.Node]algorithms.Costs
 	prevMap map[node.Node]algorithms.Prev
